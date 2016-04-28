@@ -1,12 +1,17 @@
 'use strict';
 
-var Hapi   = require('hapi');
-var Moment = require('moment');
-var fs     = require('fs');
-var env    = process.env.NODE_ENV || "development";
-var configPath = './config/'+env+'.js';
+const Hapi        = require('hapi');
+const Moment      = require('moment');
+const fs          = require('fs');
+const Inert       = require('inert');
+const Vision      = require('vision');
+const HapiSwagger = require('hapi-swagger');
+const Pack        = require('./package');
+const env         = process.env.NODE_ENV || "development";
+const configPath  = './config/'+env+'.js';
 
 
+// Config
 try { // checking if configPath is accessible
     fs.accessSync(configPath, fs.F_OK);
 } catch (e) {
@@ -40,14 +45,36 @@ server.register(require('hapi-auth-jwt2'), (err) => {
     });
     server.auth.default('jwt');    
 
-    // routes
-    server.route((require('./api/routes')(app)).endpoints);
 
-    server.start(() => { // start server
-        console.log('Server Listening on : http://'+ app.config.server.host + ':' + app.config.server.port);
-    });
+    // setting up docs
+    server.register([
+        Inert,
+        Vision,
+        {
+            register: HapiSwagger,
+            options: {
+                info: {
+                    title:    app.config.name + ' Documentation',
+                    version:  app.config.version,
+                    contact:  app.config.authorContact,
+                },
+                pathPrefixSize: 2,
+                basePath: '/api'
+            }
+        }],  (err) => {
+            if (err) console.log(err);
 
-    // DB SYNC
-    // app.models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0').then(() => { app.models.sequelize.sync({ force: true }).then(() => { app.models.sequelize.query('SET FOREIGN_KEY_CHECKS = 1') }) });
+            // routes
+            server.route((require('./api/routes')(app)).endpoints);
+
+            server.start((err) => { // start server
+                if (err) console.log(err);
+
+                console.log('Server Listening on : http://'+ app.config.server.host + ':' + app.config.server.port);
+            });
+
+            // DB SYNC
+            // app.models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0').then(() => { app.models.sequelize.sync({ force: true }).then(() => { app.models.sequelize.query('SET FOREIGN_KEY_CHECKS = 1') }) });
+        })
 });
 

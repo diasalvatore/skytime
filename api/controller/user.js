@@ -11,10 +11,26 @@ module.exports = function (app) {
     exports.name = 'user';
 
     exports.create = {
+        description: 'Create a new User',
+        notes: 'Create a new User, it sends an email with a verification code',
+        tags: [ 'api' ],
         auth: false,
         validate: {
             payload: {
-                email: Joi.string().email().required(),
+                email: Joi.string().email().required().description("User email"),
+            }
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    '200': {
+                        'description': 'Returns a message for the user',
+                        'schema': Joi.object({
+                            message: Joi.string().required(),
+                        }).label('Result')
+                    },
+                    '400': { 'description': 'Invalid email' }
+                }
             }
         },
         handler: (request, reply) => {
@@ -40,11 +56,28 @@ module.exports = function (app) {
     };
 
     exports.login = {
+        description: 'Login',
+        notes: 'Login, authCode should have been sent via email',
+        tags: [ 'api' ],
         auth: false,
         validate: {
             payload: {
                 email: Joi.string().email().required(),
                 authCode: Joi.string().required()
+            }
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    '200': {
+                        'description': 'Returns a token valid for '+app.config.auth.ttl+' seconds',
+                        'schema': Joi.object({
+                            token: Joi.string().required(),
+                        }).label('Result')
+                    },
+                    '400': { 'description': 'Invalid email/authCode' },
+                    '403': { 'description': 'Wrong email/authCode' }
+                }
             }
         },
         handler: function(request, reply) {
@@ -64,7 +97,6 @@ module.exports = function (app) {
                 }
 
                 reply({
-                    id: user.id,
                     token: Jwt.sign(tokenData, app.config.auth.key)
                 });
 

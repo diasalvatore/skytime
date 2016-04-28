@@ -3,6 +3,10 @@
 module.exports = (() => {
     return {
         name: "Skytime",
+        version: "1.0.0",
+        authorContact: {
+            email: "salvatore.diana@skylabs.it",
+        },
         db: {
             host: "127.0.0.1",
             username: "",
@@ -12,7 +16,7 @@ module.exports = (() => {
         },
         auth: {
             key: '',
-            maxAge: 60*1000 // 60 secs
+            ttl: 60 // 60 secs
         },
         email: {
             from: "SkyTime <time@sky.sky>",
